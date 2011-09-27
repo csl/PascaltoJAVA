@@ -107,6 +107,7 @@ int main()
 /*022*/	emit32(iinc, 2, 1);		// i++
 /*025*/	emit3(goto_, label1 - pc);	// goto label1
 	backpatch(label2, pc - label2);	// label2:
+
 /*028*/	emit(aload_1);
 /*029*/	emit(iconst_0);
 /*030*/	emit(iaload);			// push val[0]

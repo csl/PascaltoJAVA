@@ -8,11 +8,12 @@ CWFLAGS=-Wall
 CIFLAGS=
 CMFLAGS=
 CFLAGS=$(CWFLAGS) $(COFLAGS) $(CIFLAGS) $(CMFLAGS)
-all:		calcclass Calc
-calcclass:	javaclass.h bytecode.h calcclass.c javaclass.o bytecode.o
-		$(CC) $(CFLAGS) -o calcclass calcclass.c javaclass.o bytecode.o
-Calc:		calcclass
-		./calcclass
+
+all:		compiler
+
+compiler:	compile.o javaclass.h bytecode.h javaclass.o bytecode.o symbol.o error.o init.o lexer.o
+		$(CC) $(CFLAGS) -o compile compile.o javaclass.o bytecode.o symbol.o error.o init.o lexer.o
+
 .c.o:
 		$(CC) $(CFLAGS) -c $<
 .PHONY: clean distclean
