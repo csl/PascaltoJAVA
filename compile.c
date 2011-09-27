@@ -33,13 +33,15 @@ void stmt()
 {
 	int test = 0;
 	int loc = 0;
-	int loc1 = 0;
+
 	int var = 0;
 
 	read_symbol();
 	switch (p)
 	{
 		case BEGIN:
+				DBG_MSG("begin\n");
+
 				opt_stmts();
 				read_symbol();
 				if (p == END)
@@ -56,14 +58,15 @@ void stmt()
 				{	
 					nread = 0;
 					expr();
-					emit3(istore, var);
+					emit2(istore, var);
+					DBG_MSG("ID := VAR %d\n", var);
 				}								
 				break;
 		case IF:
 				DBG_MSG("if\n");
 				expr();
 				emit(iconst_0);
-				loc1 = pc;
+				loc = pc;
 				emit3(if_icmpeq, 0);
 
 				read_symbol();
@@ -72,12 +75,12 @@ void stmt()
 					nread = 0;
 					DBG_MSG("then\n");
 					stmt();
-					backpatch(loc1, pc - loc1);
+					backpatch(loc, pc - loc);
 				}				
 				break;
 		case WHILE:
 				DBG_MSG("while\n");
-                test = pc;
+                		test = pc;
 				expr();
 				emit(iconst_0);
 				loc = pc;
@@ -138,6 +141,7 @@ void morefactors()
 	read_symbol();
 	if (p == '*')
 	{
+		DBG_MSG("*\n");
 		nread = 0;
 		factor();
 		emit(imul);
@@ -215,25 +219,26 @@ void factor()
 	}
 	else if (p == INT8)
 	{
-        DBG_MSG("$INT8 = %d\n", tokenval);
+        	DBG_MSG("$INT8 = %d\n", tokenval);
 		nread=0;
 		emit2(bipush, tokenval);
 	}
 	else if (p == INT16)
 	{
 		nread=0;
-        DBG_MSG("$INT16 = %d\n", tokenval);
+        	DBG_MSG("$INT16 = %d\n", tokenval);
 		emit3(sipush, tokenval);
 	}
 	else if (p == INT32)
 	{
 		nread=0;
-    	index1 = constant_pool_add_Integer(&cf, tokenval);		
-        DBG_MSG("$INT32 = %d\n", tokenval);
+    		index1 = constant_pool_add_Integer(&cf, tokenval);		
+        	DBG_MSG("$INT32 = %d\n", tokenval);
 		emit2(ldc, index1);
 	}
 	else if (p == ID)
 	{
+        	DBG_MSG("ID = %d\n", tokenval);
 		nread=0;
 		emit2(iload, tokenval);
 	}
@@ -244,13 +249,11 @@ void factor()
 		if (p == INT8)
 		{
 			nread=0;
-            DBG_MSG("p = %d, $INT8 = %d\n", p, tokenval);
+            		DBG_MSG("p = %d, $INT8 = %d\n", p, tokenval);
+
 			emit(aload_1);
 			emit2(bipush, tokenval);
 			emit(iaload);
-    		index1 = constant_pool_add_Methodref(&cf, "java/lang/Integer", "parseInt", "(Ljava/lang/String;)I");
-			emit3(invokestatic, index1);
-			emit(iastore);
 		}
 	}
 	else
@@ -261,8 +264,11 @@ void factor()
 
 int main()
 {
-	
+    int index1, index2, index3;
+    int label1, label2;
+
     init_ClassFile(&cf);
+    init();
 
     cf.access = ACC_PUBLIC;
 
@@ -285,16 +291,40 @@ int main()
     cf.methods[0].max_locals = 127;
 
     init_code();
+    
+    emit(aload_0);
+    emit(arraylength);
+    emit2(newarray, T_INT);
+    emit(astore_1);
+    emit(iconst_0);
+    emit(istore_2);
+    label1 = pc;
+    emit(iload_2);
+    emit(aload_0);
+    emit(arraylength);
+    label2 = pc;
+    emit3(if_icmpge, PAD);		// if i >= arg.length then goto label2
+    emit(aload_1);
+    emit(iload_2);
+    emit(aload_0);
+    emit(iload_2);
+    emit(aaload);			// push arg[i] parameter for parseInt
+    index1 = constant_pool_add_Methodref(&cf, "java/lang/Integer", "parseInt", "(Ljava/lang/String;)I");
+    emit3(invokestatic, index1);	// invoke Integer.parseInt(arg[i])
+    emit(iastore);			// val[i] = Integer.parseInt(arg[i])
+    emit32(iinc, 2, 1);		// i++
+    emit3(goto_, label1 - pc);	// goto label1
+    backpatch(label2, pc - label2);	// label2:
+    
+    stmt();
 
-    init();
-
-	stmt();
-
-	emit(return_);	
+    emit(return_);	
 
     cf.methods[0].code_length = pc;
 
     cf.methods[0].code = copy_code();
 
     save_classFile(&cf);	
+
+    return 0;
 }
