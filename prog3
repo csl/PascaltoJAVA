@@ -1,0 +1,10 @@
+begin
+	n := $0;
+	fac := 1;
+	while n do
+	begin
+		fac := fac *n;
+		n := n - 1;
+	end;
+	output fac;
+end

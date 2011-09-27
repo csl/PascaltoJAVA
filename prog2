@@ -1,0 +1,6 @@
+begin
+	output 0;
+	if $0 then
+		if $1 then
+			output 1;
+end

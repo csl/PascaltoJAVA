@@ -1,0 +1,19 @@
+begin
+	pow := 1;
+	n := $0;
+	m := $1;
+	while m do
+	begin
+		if m mod 2 then
+		begin
+			pow := pow * n;
+			m := m - 1;
+		end;
+		if (m - 1) mod 2 then
+		begin
+			n := n * n;
+			m := m div 2;
+		end;
+	end;
+	output pow;
+end
